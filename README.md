@@ -17,8 +17,8 @@ security-notes/
 
 ## Topics covered so far
 
-- **Networking fundamentals** — IP addressing (public/private), subnetting, ports, DHCP, DNS and record types, NAT, VLANs, VPNs, OSI model and relevant RFCs
-- **Reconnaissance** — passive recon/OSINT vs active recon, toolkits for each phase, and a repeatable checklist for mapping attack surface
+- **Networking fundamentals**: IP addressing (public/private), subnetting, ports, DHCP, DNS and record types, NAT, VLANs, VPNs, OSI model and relevant RFCs
+- **Reconnaissance**: passive recon/OSINT vs active recon, toolkits for each phase, and a repeatable checklist for mapping attack surface
 
 ## Why this exists
 
