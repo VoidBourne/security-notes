@@ -1,0 +1,145 @@
+# Networking Fundamentals
+
+## The problem networking solves
+
+At its core, networking exists to solve one problem: **devices need to connect to each other and share data.** Everything else is a refinement on top of that.
+
+Break it into two layers:
+1. **The physical/logical problem**: how do devices actually reach each other at all? (cables, WiFi, switches, routers)
+2. **The identification problem**: once connected, how does data know exactly which device (and which service on that device) it's meant for?
+
+As networks scaled from a handful of machines to billions of globally connected devices, each concept below was invented to solve a specific pain point that showed up at scale:
+
+| Problem at scale | Solution |
+|---|---|
+| Too many devices to configure manually | DHCP |
+| Too few public addresses for everyone | NAT |
+| Humans can't remember addresses | DNS |
+| Too risky to treat one giant network as flat | Subnetting / VLANs |
+
+## Network
+
+A **network** is simply two or more devices connected together so they can communicate and share resources such as: data, files, internet access, printers, etc. Connection + communication.
+
+**Building blocks:**
+- **Nodes/hosts**: the devices themselves
+- **A medium**: physical (Ethernet, fiber) or wireless (WiFi, radio)
+- **Addressing**: a way to find and message each device individually (IP addresses)
+- **Protocols**: shared rules for how devices "talk" (TCP/IP, HTTP, DNS)
+
+**Common categories:** LAN (one physical location), WAN (spans large distances, the internet is the largest WAN).
+
+## IP Addressing
+
+An **IP address** is a unique identifier for a device on a network. Every device that communicates on a network needs one, but not every IP address is designed to be reachable from the internet.
+
+- **IPv4**: 32-bit (e.g. `192.168.1.10`)
+- **IPv6**: 128-bit, built because IPv4's ~4.3 billion addresses ran out
+
+### Public vs Private IP addresses
+
+**Public IP addresses** are globally unique and routable across the internet. Allocated ultimately by IANA down through regional registries (ARIN, RIPE, APNIC) to ISPs and organizations. Anything that needs to be directly reachable from anywhere on the internet needs one.
+
+**Private IP addresses** are reserved for use inside a local network only, and are **not routable on the public internet**: routers simply drop packets addressed to these ranges if they appear externally. This is defined by **RFC 1918**:
+
+| Range | CIDR |
+|---|---|
+| `10.0.0.0 - 10.255.255.255` | `10.0.0.0/8` |
+| `172.16.0.0 - 172.31.255.255` | `172.16.0.0/12` |
+| `192.168.0.0 - 192.168.255.255` | `192.168.0.0/16` |
+
+**Other reserved ranges worth knowing:**
+- `127.0.0.0/8`: loopback (`127.0.0.1` = localhost)
+- `169.254.0.0/16`: APIPA, self-assigned when DHCP fails (a signal something's misconfigured)
+
+**Pentesting relevance:** spotting a private-range IP leak (in an email header, an error message, an internal tool response) instantly tells you something about internal network structure. It's also the reason external vs internal engagements are fundamentally different: external only sees what NAT/firewalls expose, while internal puts you inside the private range.
+
+## Subnetting & Subnet Masks
+
+A **subnet mask** (e.g. `255.255.255.0` or `/24`) splits an IP address into a **network portion** and a **host portion**. It answers: "which part of this address identifies the network, and which part identifies the device?"
+
+**Subnetting** means dividing a larger network into smaller sub-networks. Reading CIDR notation correctly (`10.10.10.0/24`) tells you instantly how many hosts you're dealing with and what your scan scope actually is. This comes up constantly in scoping and in targeting tools like Nmap (`nmap 10.10.10.0/24`).
+
+## Hosts
+
+A **host** is any device with an IP address on a network: server, laptop, phone, IoT device. In pentesting, "the host" is often shorthand for "the target machine."
+
+## Ports
+
+A **port** is a logical endpoint. If the IP is the street address, the port is the apartment number. Together, IP:Port uniquely identifies which service on which machine you're talking to. Ports are how a single machine runs many services (web, SSH, mail) simultaneously without collision.
+
+Common ports worth knowing cold: 21 (FTP), 22 (SSH), 25 (SMTP), 53 (DNS), 80/443 (HTTP/S), 445 (SMB).
+
+## DHCP
+
+**Dynamic Host Configuration Protocol (RFC 2131)**: how a device automatically gets an IP address when it joins a network, instead of manual/static configuration. The same handshake also hands out the subnet mask, default gateway, and DNS server info.
+
+**Pentesting relevance:** on internal engagements, DHCP lease info can itself reveal something about network segmentation.
+
+## DNS & DNS Record Types
+
+**DNS** resolves domain names to IP addresses, since humans don't want to memorize IPs (RFC 1035).
+
+| Record | Purpose |
+|---|---|
+| A | domain to IPv4 address |
+| AAAA | domain to IPv6 address |
+| CNAME | alias, domain to another domain |
+| MX | mail server for the domain |
+| NS | authoritative nameservers |
+| TXT | arbitrary text (SPF, DKIM, verification strings, often leaks info) |
+| PTR | reverse lookup, IP to domain |
+
+## NAT (Network Address Translation)
+
+Translates private IPs to a public IP (and back), so internal devices can reach the internet while sharing one public-facing address. This is why a home network's 20 devices all appear as a single IP externally.
+
+**Security relevance:** NAT incidentally acts as a rough perimeter, since internal hosts aren't directly reachable from outside without port forwarding. That's part of why internal vs external pentests are such different engagements.
+
+## VLANs (Virtual LANs)
+
+Logically segment a single physical network into separate broadcast domains, even when devices sit on the same physical switch. Core to network segmentation (e.g. isolating guest WiFi from corporate systems). **VLAN hopping** is a real attack technique, and you need the concept to understand what you're trying to break.
+
+## VPNs (Virtual Private Networks)
+
+Create an encrypted tunnel between two points over an untrusted network (like the internet), making a remote device behave as if it's on the internal network. Used constantly in practice: HTB, THM, and real engagements connect in via VPN (usually an OpenVPN config).
+
+## RFCs (Request for Comments)
+
+The official documents (published by the IETF) that define internet standards and protocols. Numbered sequentially, never reused: "per RFC 1918" always refers to the same document, permanently.
+
+**Worth knowing by number:**
+- **RFC 1918**: private IP ranges
+- **RFC 791**: IPv4
+- **RFC 1035**: DNS
+- **RFC 793**: TCP (three-way handshake)
+- **RFC 2131**: DHCP
+
+RFCs are the ground truth when a protocol's "correct" behavior is ambiguous. Tools like Nmap fingerprint services partly by checking for deviation from RFC spec.
+
+## How it all connects
+
+```mermaid
+flowchart TB
+    internet["Public internet<br/>globally routable IPs"]
+    dns["DNS<br/>resolves names to IPs"]
+    nat["NAT gateway<br/>translates private to public IP"]
+    subnet["Subnetting / VLANs<br/>segments the network"]
+    dhcp["DHCP<br/>auto-assigns IPs"]
+    host["Host<br/>e.g. 192.168.1.10, ports 22/80/443"]
+    vpn["VPN tunnel<br/>encrypted remote access"]
+
+    internet <--> dns
+    dns <--> nat
+    nat <--> subnet
+    subnet --> dhcp
+    dhcp --> host
+    subnet --> vpn
+    vpn -.-> host
+```
+
+**Reading it top to bottom:** a request from the public internet is resolved by DNS, translated at the NAT boundary into the private network, which is carved into segments by subnetting/VLANs. Inside a segment, DHCP assigns hosts their addresses, and each host exposes services on specific ports. A VPN sits alongside NAT as an alternate way in: it tunnels a remote device past the NAT boundary so it behaves as if it's local to the segmented private network.
+
+## Mindset
+
+Every one of these exists to solve a scaling problem for the same two questions: how do devices reach each other, and how does data know which device (and which service) it's meant for? If you forget a specific detail, you should be able to re-derive why the concept exists just from those two questions.
