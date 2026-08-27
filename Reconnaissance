@@ -1,33 +1,51 @@
 # Reconnaissance
 
+## Contents
+
+- [Overview](#overview)
+- [Passive Recon / OSINT](#passive-recon--osint-open-source-intelligence)
+- [Active Recon](#active-recon)
+- [Checklist](#checklist)
+- [Mindset](#mindset)
+
+---
+
+## Overview
+
 This is the first stage of a pentest. The goal is to gather as much information on your target as possible and map the attack surface.
 
-You don't want to make noise when scanning — this triggers alarms.
+You don't want to make noise when scanning: this triggers alarms.
+
+---
 
 ## Passive Recon / OSINT (Open Source Intelligence)
 
 Interacting with the target via public records, etc. In this stage, you aren't sending any packets directly to the target.
 
-**Toolkit:**
+**Toolkit**
 - WHOIS (`whois <target>`)
 - DNS records (`dig MX`, `dig TXT`, `dig NS`)
 - Subdomain enumeration (crt.sh, subfinder)
 - Search engine dorking
 - Shodan (finds exposed services without scanning)
-- Wayback Machine (web.archive.org — exposes old endpoints)
+- Wayback Machine (web.archive.org, exposes old endpoints)
+
+---
 
 ## Active Recon
 
 This is the stage where you start scanning ports and requesting pages. Because you are interacting directly with the target, it is detectable.
 
-**Toolkit:**
+**Toolkit**
 - Nmap (core tool)
 - Directory/file brute-forcing (Gobuster / ffuf)
-- Banner grabbing — connect directly to a port with Netcat to see what greets you; this often reveals exact software and version
+- Banner grabbing: connect directly to a port with Netcat to see what greets you; this often reveals exact software and version
+
+---
 
 ## Checklist
 
-**Never scan blindly.** You need to understand what you're looking for before you start.
+Never scan blindly. You need to understand what you're looking for before you start.
 
 1. What domains/subdomains exist?
 2. What IPs/infrastructure sit behind them?
@@ -37,8 +55,10 @@ This is the stage where you start scanning ports and requesting pages. Because y
 6. Who are the people/emails associated (used for phishing/password cracking later)?
 7. What's leaked or exposed that shouldn't be (GitHub secrets, old backups, docs)?
 
-After answering all these questions, you **must** note the results, then follow up on what those results mean.
+After answering all these questions, you must note the results, then follow up on what those results mean.
+
+---
 
 ## Mindset
 
-Every finding should feed the next question — a port, a version banner, a subdomain, each one should turn into a hypothesis you can pivot from. Running fifteen tools and ending up with a wall of unexamined output isn't recon, it's noise. Good recon is a living map of the attack surface, not a log file.
+Every finding should feed the next question. A port, a version banner, a subdomain: each one should turn into a hypothesis you can pivot from. Running fifteen tools and ending up with a wall of unexamined output isn't recon, it's noise. Good recon is a living map of the attack surface, not a log file.
