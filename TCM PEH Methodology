@@ -1,0 +1,96 @@
+# Reconnaissance Methodology - TCM PEH
+
+## Phase 1: Host Discovery
+
+Goal: find the target's IP address on the local network.
+
+```bash
+sudo netdiscover -i eth0 -r <subnet>/24
+# or
+sudo nmap -sn <subnet>/24
+```
+
+| Flag | Meaning |
+|---|---|
+| `-i eth0` | force the correct interface |
+| `-r <subnet>/24` | range to scan (e.g. `192.168.56.0/24`) |
+| `-sn` (nmap) | ping sweep only, no port scan yet |
+
+---
+
+## Phase 2: Port & Service Scanning
+
+Goal: find what's open and what's running on it.
+
+```bash
+nmap -T4 -p- -A <Target IP>
+```
+
+| Flag | Meaning |
+|---|---|
+| `-T4` | speed/timing template (0-5, 5 fastest/noisiest) |
+| `-p-` | scan all 65535 ports, not just the common ones |
+| `-A` | aggressive: OS detection + version detection (`-sV`) + default scripts (`-sC`) + traceroute |
+
+> Note: `-A` is thorough but slow. On bigger ranges, run a fast scan first to find open ports, then `-A` targeted at specific hosts.
+
+**What to look at in the output:**
+- [ ] Open ports (ignore closed/filtered)
+- [ ] Service + version on each port
+- [ ] Anything flagged by `-sC` scripts, or run `--script vuln` for a more aggressive pass
+
+---
+
+## Phase 3: Web Enumeration
+
+If a web service is running (ports 80 / 443 / 8080 / etc.), dig into it.
+
+### Directory / file brute-forcing: Gobuster
+
+```bash
+gobuster dir -u http://<Target IP> -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x php,txt,html -t 50
+```
+
+| Flag | Meaning |
+|---|---|
+| `dir` | directory-busting mode (also: `dns`, `vhost`, `s3`) |
+| `-w` | wordlist |
+| `-x` | also check these file extensions |
+| `-t 50` | thread count for speed |
+
+**Reading results:**
+| Code | Meaning |
+|---|---|
+| `200` | found, accessible |
+| `301 / 302` | redirect, usually a real directory |
+| `403` | exists but forbidden, still worth noting |
+| `404` | not shown at all |
+
+### Vulnerability / misconfig scan: Nikto
+
+```bash
+nikto -h http://<Target IP>
+```
+
+Flags outdated server software, dangerous default files, misconfigurations, exposed admin panels, known CVEs on installed components.
+
+---
+
+## Phase 4: Triage, What to Chase First
+
+Scans generate a lot of noise. Priority order:
+
+1. **Specific version numbers from nmap** - old, specific versions (e.g. `vsftpd 2.3.4`) are the fastest lead. Search `<service> <version> exploit` immediately.
+2. **Nikto findings that name a CVE or exploit-DB reference directly** - high priority, skip the generic informational noise (missing headers, etc.)
+3. **Gobuster hits that aren't standard/expected paths** - admin panels, backup files, anything with "old / test / backup / dev" in the name. Ignore boilerplate (`/css`, `/js`, `/images`).
+4. **Vague findings** (e.g. "directory listing enabled") - low priority on their own, rarely the actual way in.
+
+> Rule of thumb: specific software + specific version = searchable exploit. Chase one lead at a time instead of trying to fully process every line of every scan before acting.
+
+---
+
+## Lab Environment Notes
+
+- VirtualBox networking: put attacker (Kali) and target on the same **Host-only** or **NAT Network** adapter so they can reach each other. Plain "NAT" isolates each VM individually.
+- Host-only has no internet access by design. If Kali needs both internet and lab access, add a second adapter (Adapter 2 = NAT, Adapter 1 = Host-only).
+- `ip a` to check your own interface/IP. Subnet for scanning = your IP's first three octets + `.0/24`.
