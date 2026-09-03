@@ -12,7 +12,7 @@ Notes are organized by topic, with each folder covering a distinct area:
 security-notes/
 ├── networking/          # Core networking theory (IP addressing, subnetting, DNS, NAT, etc.)
 ├── reconnaissance/       # Passive and active recon methodology, tooling, checklists
-└── ...                   # More topics added as I progress
+└── PEH Methodology/       #Kioptrix labs methodology
 ```
 
 ## Topics covered so far
